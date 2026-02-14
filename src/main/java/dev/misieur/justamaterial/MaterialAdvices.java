@@ -553,14 +553,20 @@ public class MaterialAdvices {
         }
     }
 
+    @SuppressWarnings("removal")
     public static class getMaxStackSize {
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) int returned,
                          @Advice.FieldValue(value = "maxStack", readOnly = false) int maxStack,
                          @Advice.This Material material) {
+            if (material == Material.LEGACY_AIR) {
+                returned = 0;
+                return;
+            }
             if (maxStack == -1) { // Not calculated yet
                 ItemType itemType = material.asItemType();
                 returned = maxStack = itemType != null ? itemType.getMaxStackSize() : 64;
+                return;
             }
             returned = maxStack;
         }
