@@ -15,7 +15,8 @@ repositories {
 }
 
 dependencies {
-    implementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
+    compileOnly(project(":compileOnly"))
     implementation("net.bytebuddy:byte-buddy:1.18.5")
     implementation("net.bytebuddy:byte-buddy-agent:1.18.5")
 }

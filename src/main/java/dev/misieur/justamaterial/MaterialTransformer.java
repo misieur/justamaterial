@@ -70,6 +70,8 @@ public final class MaterialTransformer implements ClassFileTransformer {
         try {
             builder = new ByteBuddy()
                     .makeEnumeration(Materials.getMaterials().stream().map(MaterialInfo::name).toArray(String[]::new))
+                    .name("org.bukkit.Material")
+                    .implement(Keyed.class, org.bukkit.Translatable.class, net.kyori.adventure.translation.Translatable.class)
                     // public static final String LEGACY_PREFIX = "LEGACY_";
                     .defineField("LEGACY_PREFIX", String.class,
                             Visibility.PUBLIC, Ownership.STATIC, FieldManifestation.FINAL)
@@ -120,7 +122,7 @@ public final class MaterialTransformer implements ClassFileTransformer {
                     .defineField("ctor", new TypeReference<Constructor<? extends org.bukkit.material.MaterialData>>() {
                     }.getType())
                     // private int maxStack;
-                    .defineField("maxStack", int.class, Visibility.PRIVATE, FieldManifestation.FINAL)
+                    .defineField("maxStack", int.class, Visibility.PRIVATE)
                     // private final NamespacedKey key;
                     .defineField("key", NamespacedKey.class, Visibility.PRIVATE, FieldManifestation.FINAL)
                     .constructor(ElementMatchers.any())
@@ -149,13 +151,13 @@ public final class MaterialTransformer implements ClassFileTransformer {
                     .intercept(Advice.to(resolver.apply("isCollidable"), locator).wrap(StubMethod.INSTANCE))
                     // public int getId()
                     .defineMethod("getId", int.class, Visibility.PUBLIC)
-                    .intercept(FieldAccessor.ofField("id"))
+                    .intercept(Advice.to(resolver.apply("getId"), locator).wrap(StubMethod.INSTANCE))
                     // public boolean isLegacy()
                     .defineMethod("isLegacy", boolean.class, Visibility.PUBLIC)
                     .intercept(FieldAccessor.ofField("legacy"))
                     // public NamespacedKey getKey()
                     .defineMethod("getKey", NamespacedKey.class, Visibility.PUBLIC)
-                    .intercept(FieldAccessor.ofField("key"))
+                    .intercept(Advice.to(resolver.apply("getKey"), locator).wrap(StubMethod.INSTANCE))
                     // public int getMaxStackSize()
                     .defineMethod("getMaxStackSize", int.class, Visibility.PUBLIC)
                     .intercept(Advice.to(resolver.apply("getMaxStackSize"), locator).wrap(StubMethod.INSTANCE))
@@ -178,8 +180,7 @@ public final class MaterialTransformer implements ClassFileTransformer {
                     .defineMethod("getData", new TypeReference<Class<? extends org.bukkit.material.MaterialData>>() {
                     }.getType(), Visibility.PUBLIC)
                     .intercept(
-                            MethodCall.invoke(ElementMatchers.named("getDeclaringClass"))
-                                    .onField("ctor")
+                            Advice.to(resolver.apply("getData"), locator).wrap(StubMethod.INSTANCE)
                     )
                     // public MaterialData getNewData(final byte raw)
                     .defineMethod("getNewData", org.bukkit.material.MaterialData.class, Visibility.PUBLIC)
@@ -200,9 +201,6 @@ public final class MaterialTransformer implements ClassFileTransformer {
                     // public boolean isAir()
                     .defineMethod("isAir", boolean.class, Visibility.PUBLIC)
                     .intercept(Advice.to(resolver.apply("isAir"), locator).wrap(StubMethod.INSTANCE))
-                    // public boolean isEmpty()
-                    .defineMethod("isEmpty", boolean.class, Visibility.PUBLIC)
-                    .intercept(MethodCall.invoke(ElementMatchers.named("isAir")))
                     // public boolean isTransparent()
                     .defineMethod("isTransparent", boolean.class, Visibility.PUBLIC)
                     .intercept(Advice.to(resolver.apply("isTransparent"), locator).wrap(StubMethod.INSTANCE))
@@ -239,9 +237,6 @@ public final class MaterialTransformer implements ClassFileTransformer {
                     // public Material getCraftingRemainingItem()
                     .defineMethod("getCraftingRemainingItem", typeDescription, Visibility.PUBLIC)
                     .intercept(Advice.to(resolver.apply("getCraftingRemainingItem"), locator).wrap(StubMethod.INSTANCE))
-                    // public EquipmentSlot getEquipmentSlot()
-                    .defineMethod("getEquipmentSlot", EquipmentSlot.class, Visibility.PUBLIC)
-                    .intercept(Advice.to(resolver.apply("getEquipmentSlot"), locator).wrap(StubMethod.INSTANCE))
                     // public @NotNull @Unmodifiable Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers()
                     .defineMethod("getDefaultAttributeModifiers", new TypeReference<Multimap<Attribute, AttributeModifier>>() {
                     }.getType(), Visibility.PUBLIC)
@@ -289,10 +284,29 @@ public final class MaterialTransformer implements ClassFileTransformer {
                     // public java.util.@Unmodifiable @NotNull Set<io.papermc.paper.datacomponent.DataComponentType> getDefaultDataTypes()
                     .defineMethod("getDefaultDataTypes", new TypeReference<Set<DataComponentType>>() {
                     }.getType(), Visibility.PUBLIC)
-                    .intercept(Advice.to(resolver.apply("getDefaultDataTypes"), locator).wrap(StubMethod.INSTANCE))
-
-                    .name("org.bukkit.Material")
-                    .implement(Keyed.class, org.bukkit.Translatable.class, net.kyori.adventure.translation.Translatable.class);
+                    .intercept(Advice.to(resolver.apply("getDefaultDataTypes"), locator).wrap(StubMethod.INSTANCE));
+            switch (Version.get()) {
+                case V1_21, V1_21_4, V1_21_5, V1_21_6 -> builder = builder
+                        .defineMethod("isEnabledByFeature", boolean.class, Visibility.PUBLIC)
+                        .withParameter(org.bukkit.World.class)
+                        .intercept(Advice.to(resolver.apply("isEnabledByFeature"), locator).wrap(StubMethod.INSTANCE));
+            }
+            switch (Version.get()) {
+                case V1_21, V1_21_4 -> builder = builder
+                        // public boolean isEmpty()
+                        .defineMethod("isEmpty", boolean.class, Visibility.PUBLIC)
+                        .intercept(Advice.to(resolver.apply("isEmpty"), locator).wrap(StubMethod.INSTANCE))
+                        // public EquipmentSlot getEquipmentSlot()
+                        .defineMethod("getEquipmentSlot", EquipmentSlot.class, Visibility.PUBLIC)
+                        .intercept(Advice.to(resolver.apply("getEquipmentSlot_old"), locator).wrap(StubMethod.INSTANCE));
+                default -> builder = builder
+                        // public boolean isEmpty()
+                        .defineMethod("isEmpty", boolean.class, Visibility.PUBLIC)
+                        .intercept(MethodCall.invoke(ElementMatchers.named("isAir")))
+                        // public EquipmentSlot getEquipmentSlot()
+                        .defineMethod("getEquipmentSlot", EquipmentSlot.class, Visibility.PUBLIC)
+                        .intercept(Advice.to(resolver.apply("getEquipmentSlot"), locator).wrap(StubMethod.INSTANCE));
+            }
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }

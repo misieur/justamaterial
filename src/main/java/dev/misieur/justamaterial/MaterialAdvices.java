@@ -7,10 +7,7 @@ import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
 import net.bytebuddy.asm.Advice;
 import org.apache.commons.lang3.tuple.Triple;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.BlockType;
@@ -18,32 +15,35 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.inventory.CreativeCategory;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemType;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nonnull;
+import javax.annotation.meta.When;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Consumer;
 
+@SuppressWarnings("unused")
 public class MaterialAdvices {
 
-    @SuppressWarnings({"removal", "unchecked"})
     public static class constructor {
+        @SuppressWarnings({"removal", "unchecked", "UnusedAssignment", "ParameterCanBeLocal"})
         @Advice.OnMethodExit
         static void exit(@Advice.This Material material,
                          @Advice.FieldValue(value = "id", readOnly = false) int id,
-                         @Advice.FieldValue(value = "ctor", readOnly = false) Constructor<? extends org.bukkit.material.MaterialData> ctor,
+                         @Advice.FieldValue(value = "ctor", readOnly = false) @Nonnull(when = When.NEVER) Constructor<? extends org.bukkit.material.MaterialData> ctor,
                          @Advice.FieldValue(value = "maxStack", readOnly = false) int maxStack,
-                         @Advice.FieldValue(value = "data", readOnly = false) Class<?> data,
+                         @Advice.FieldValue(value = "data", readOnly = false) @Nonnull(when = When.NEVER) Class<?> data,
                          @Advice.FieldValue(value = "legacy", readOnly = false) boolean legacy,
-                         @Advice.FieldValue(value = "key", readOnly = false) NamespacedKey key,
-                         @Advice.FieldValue("LEGACY_PREFIX") String LEGACY_PREFIX,
-                         @Advice.FieldValue(value = "DATA_CACHE", readOnly = false) Map<String, Triple<Integer, String, NamespacedKey>> DATA_CACHE) {
+                         @Advice.FieldValue(value = "key", readOnly = false) @Nonnull(when = When.NEVER) NamespacedKey key,
+                         @Advice.FieldValue("LEGACY_PREFIX") @NotNull String LEGACY_PREFIX,
+                         @Advice.FieldValue(value = "DATA_CACHE", readOnly = false) @Nonnull(when = When.MAYBE) Map<String, Triple<Integer, String, NamespacedKey>> DATA_CACHE) {
             if (DATA_CACHE == null) {
                 try {
-                    Field classLoaderField = Class.forName("dev.misieur.justamaterial.GeneratedForBukkit").getDeclaredField("CLASSLOADER");
-                    classLoaderField.setAccessible(true);
-                    Field dataField = Class.forName("dev.misieur.justamaterial.Materials", true, (ClassLoader) classLoaderField.get(null)).getDeclaredField("DATA");
+                    Field dataField = Class.forName("dev.misieur.justamaterial.Materials", true, GeneratedForBukkit.CLASSLOADER).getDeclaredField("DATA");
                     dataField.setAccessible(true);
                     DATA_CACHE = (Map<String, Triple<Integer, String, NamespacedKey>>) dataField.get(null);
                 } catch (IllegalAccessException | NoSuchFieldException | ClassNotFoundException e) {
@@ -81,8 +81,9 @@ public class MaterialAdvices {
     }
 
     public static class staticInitializer {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
-        public static void exit(@Advice.FieldValue(value = "BY_NAME", readOnly = false) Map<String, Material> BY_NAME) {
+        public static void exit(@Advice.FieldValue(value = "BY_NAME", readOnly = false) @NotNull Map<String, Material> BY_NAME) {
             Map<String, Material> byName = HashMap.newHashMap(Material.values().length);
             for (Material material : Material.values()) {
                 byName.put(material.name(), material);
@@ -92,38 +93,42 @@ public class MaterialAdvices {
     }
 
     public static class createBlockData {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
-        public static void exit(@Advice.Return(readOnly = false) BlockData returned,
-                                @Advice.This Material material) {
+        public static void exit(@Advice.Return(readOnly = false) @NotNull BlockData returned,
+                                @Advice.This @NotNull Material material) {
             returned = Bukkit.createBlockData(material);
         }
     }
 
     public static class createBlockData_consumer {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
-        public static void exit(@Advice.Return(readOnly = false) BlockData returned,
-                                @Advice.This Material material,
-                                @Advice.Argument(0) Consumer<? super BlockData> consumer) {
+        public static void exit(@Advice.Return(readOnly = false) @NotNull BlockData returned,
+                                @Advice.This @NotNull Material material,
+                                @Advice.Argument(0) @NotNull Consumer<? super BlockData> consumer) {
             returned = Bukkit.createBlockData(material, consumer);
         }
     }
 
     public static class createBlockData_data {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
-        public static void exit(@Advice.Return(readOnly = false) BlockData returned,
-                                @Advice.This Material material,
-                                @Advice.Argument(0) String data) {
+        public static void exit(@Advice.Return(readOnly = false) @NotNull BlockData returned,
+                                @Advice.This @NotNull Material material,
+                                @Advice.Argument(0) @NotNull String data) {
             returned = Bukkit.createBlockData(material, data);
         }
     }
 
     @SuppressWarnings("deprecation")
     public static class getMaterial {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
-        public static void exit(@Advice.Return(readOnly = false) Material returned,
-                                @Advice.FieldValue(value = "BY_NAME") Map<String, Material> BY_NAME,
-                                @Advice.FieldValue(value = "LEGACY_PREFIX") String LEGACY_PREFIX,
-                                @Advice.Argument(value = 0, readOnly = false) String name,
+        public static void exit(@Advice.Return(readOnly = false) @Nullable Material returned,
+                                @Advice.FieldValue(value = "BY_NAME") @NotNull Map<String, Material> BY_NAME,
+                                @Advice.FieldValue(value = "LEGACY_PREFIX") @NotNull String LEGACY_PREFIX,
+                                @Advice.Argument(value = 0, readOnly = false) @NotNull String name,
                                 @Advice.Argument(1) boolean legacyName) {
             if (legacyName) {
                 if (!name.startsWith(LEGACY_PREFIX)) {
@@ -140,9 +145,10 @@ public class MaterialAdvices {
     }
 
     public static class matchMaterial {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         public static void exit(@Advice.Return(readOnly = false) Material returned,
-                                @Advice.Argument(0) String name,
+                                @Advice.Argument(0) @Nonnull(when = When.MAYBE) String name,
                                 @Advice.Argument(1) boolean legacyName) {
             Preconditions.checkArgument(name != null, "Name cannot be null");
 
@@ -159,11 +165,12 @@ public class MaterialAdvices {
 
     @SuppressWarnings("removal")
     public static class getNewData {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) org.bukkit.material.MaterialData returned,
-                         @Advice.This Material material,
+                         @Advice.This @NotNull Material material,
                          @Advice.Argument(0) byte raw,
-                         @Advice.FieldValue("ctor") Constructor<? extends org.bukkit.material.MaterialData> ctor) {
+                         @Advice.FieldValue("ctor") @NotNull Constructor<? extends org.bukkit.material.MaterialData> ctor) {
             Preconditions.checkArgument(material.isLegacy(), "Cannot get new data of Modern Material");
             try {
                 returned = ctor.newInstance(material, raw);
@@ -183,22 +190,49 @@ public class MaterialAdvices {
     }
 
     public static class isCollidable {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
-            if (material.isBlock()) {
-                returned = material.asBlockType().hasCollision();
+                         @Advice.This @NotNull Material material) {
+            BlockType blockType = material.asBlockType();
+            if (blockType != null) {
+                returned = blockType.hasCollision();
                 return;
             }
             throw new IllegalArgumentException(material + " isn't a block type");
         }
     }
 
+    public static class getId {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
+        @Contract(pure = true)
+        @Advice.OnMethodExit
+        static void exit(@Advice.Return(readOnly = false) int returned,
+                         @Advice.FieldValue("legacy") boolean legacy,
+                         @Advice.FieldValue("id") int id) {
+            Preconditions.checkArgument(legacy, "Cannot get ID of Modern Material");
+            returned = id;
+        }
+    }
+
+    public static class getKey {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
+        @Contract(pure = true)
+        @Advice.OnMethodExit
+        static void exit(@Advice.Return(readOnly = false) NamespacedKey returned,
+                         @Advice.FieldValue("legacy") boolean legacy,
+                         @Advice.FieldValue("key") NamespacedKey key) {
+            Preconditions.checkArgument(!legacy, "Cannot get key of Legacy Material");
+            returned = key;
+        }
+    }
+
     public static class getDefaultAttributeModifiers {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) Multimap<Attribute, AttributeModifier> returned,
-                         @Advice.This Material material,
-                         @Nullable @Advice.Argument(0) EquipmentSlot slot) {
+                         @Advice.This @NotNull Material material,
+                         @Advice.Argument(0) @Nullable EquipmentSlot slot) {
             ItemType type = material.asItemType();
             Preconditions.checkArgument(type != null, "The Material is not an item!");
             returned = slot != null ? type.getDefaultAttributeModifiers(slot) : type.getDefaultAttributeModifiers();
@@ -207,17 +241,19 @@ public class MaterialAdvices {
 
     @SuppressWarnings("removal")
     public static class getItemRarity {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) io.papermc.paper.inventory.ItemRarity returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             returned = new org.bukkit.inventory.ItemStack(material).getRarity();
         }
     }
 
     public static class getTranslationKey {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) String returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             if (material.isItem()) {
                 returned = java.util.Objects.requireNonNull(material.asItemType()).translationKey();
             } else {
@@ -227,179 +263,150 @@ public class MaterialAdvices {
     }
 
     public static class getMaxDurability {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) short returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             ItemType type = material.asItemType();
             returned = type == null ? 0 : type.getMaxDurability();
         }
     }
 
     public static class isBlock {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             returned = material.asBlockType() != null;
         }
     }
 
     public static class isEdible {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             ItemType type = material.asItemType();
             returned = type != null && type.isEdible();
         }
     }
 
     public static class isRecord {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             ItemType type = material.asItemType();
             returned = type != null && type.isRecord();
         }
     }
 
     public static class isSolid {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             returned = type != null && type.isSolid();
         }
     }
 
     public static class isAir {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             returned = type != null && type.isAir();
         }
     }
 
-    @SuppressWarnings("removal")
+    @SuppressWarnings({"removal"})
     public static class isTransparent {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
-            if (!material.isBlock()) {
-                returned = false;
-                return;
-            }
-            returned = switch (material) {
-                case ACACIA_BUTTON, ACACIA_SAPLING, ACTIVATOR_RAIL, AIR, ALLIUM, ATTACHED_MELON_STEM,
-                     ATTACHED_PUMPKIN_STEM,
-                     AZURE_BLUET, BARRIER, BEETROOTS, BIRCH_BUTTON, BIRCH_SAPLING, BLACK_CARPET, BLUE_CARPET,
-                     BLUE_ORCHID,
-                     BROWN_CARPET, BROWN_MUSHROOM, CARROTS, CAVE_AIR, CHORUS_FLOWER, CHORUS_PLANT, COCOA, COMPARATOR,
-                     CREEPER_HEAD, CREEPER_WALL_HEAD, CYAN_CARPET, DANDELION, DARK_OAK_BUTTON, DARK_OAK_SAPLING,
-                     DEAD_BUSH,
-                     DETECTOR_RAIL, DRAGON_HEAD, DRAGON_WALL_HEAD, END_GATEWAY, END_PORTAL, END_ROD, FERN, FIRE,
-                     FLOWER_POT,
-                     GRAY_CARPET, GREEN_CARPET, JUNGLE_BUTTON, JUNGLE_SAPLING, LADDER, LARGE_FERN, LEVER,
-                     LIGHT_BLUE_CARPET,
-                     LIGHT_GRAY_CARPET, LILAC, LILY_PAD, LIME_CARPET, MAGENTA_CARPET, MELON_STEM, NETHER_PORTAL,
-                     NETHER_WART, OAK_BUTTON, OAK_SAPLING, ORANGE_CARPET, ORANGE_TULIP, OXEYE_DAISY, PEONY, PINK_CARPET,
-                     PINK_TULIP, PLAYER_HEAD, PLAYER_WALL_HEAD, POPPY, POTATOES, POTTED_ACACIA_SAPLING, POTTED_ALLIUM,
-                     POTTED_AZALEA_BUSH, POTTED_AZURE_BLUET, POTTED_BIRCH_SAPLING, POTTED_BLUE_ORCHID,
-                     POTTED_BROWN_MUSHROOM, POTTED_CACTUS, POTTED_DANDELION, POTTED_DARK_OAK_SAPLING, POTTED_DEAD_BUSH,
-                     POTTED_FERN, POTTED_FLOWERING_AZALEA_BUSH, POTTED_JUNGLE_SAPLING, POTTED_OAK_SAPLING,
-                     POTTED_ORANGE_TULIP, POTTED_OXEYE_DAISY, POTTED_PINK_TULIP, POTTED_POPPY, POTTED_RED_MUSHROOM,
-                     POTTED_RED_TULIP, POTTED_SPRUCE_SAPLING, POTTED_WHITE_TULIP, POWERED_RAIL, PUMPKIN_STEM,
-                     PURPLE_CARPET,
-                     RAIL, REDSTONE_TORCH, REDSTONE_WALL_TORCH, REDSTONE_WIRE, RED_CARPET, RED_MUSHROOM, RED_TULIP,
-                     REPEATER, ROSE_BUSH, SHORT_GRASS, SKELETON_SKULL, SKELETON_WALL_SKULL, SNOW, SPRUCE_BUTTON,
-                     SPRUCE_SAPLING, STONE_BUTTON, STRUCTURE_VOID, SUGAR_CANE, SUNFLOWER, TALL_GRASS, TORCH, TRIPWIRE,
-                     TRIPWIRE_HOOK, VINE, VOID_AIR, WALL_TORCH, WHEAT, WHITE_CARPET, WHITE_TULIP, WITHER_SKELETON_SKULL,
-                     WITHER_SKELETON_WALL_SKULL, YELLOW_CARPET, ZOMBIE_HEAD, ZOMBIE_WALL_HEAD, LEGACY_AIR,
-                     LEGACY_SAPLING,
-                     LEGACY_POWERED_RAIL, LEGACY_DETECTOR_RAIL, LEGACY_LONG_GRASS, LEGACY_DEAD_BUSH,
-                     LEGACY_YELLOW_FLOWER,
-                     LEGACY_RED_ROSE, LEGACY_BROWN_MUSHROOM, LEGACY_RED_MUSHROOM, LEGACY_TORCH, LEGACY_FIRE,
-                     LEGACY_REDSTONE_WIRE, LEGACY_CROPS, LEGACY_LADDER, LEGACY_RAILS, LEGACY_LEVER,
-                     LEGACY_REDSTONE_TORCH_OFF, LEGACY_REDSTONE_TORCH_ON, LEGACY_STONE_BUTTON, LEGACY_SNOW,
-                     LEGACY_SUGAR_CANE_BLOCK, LEGACY_PORTAL, LEGACY_DIODE_BLOCK_OFF, LEGACY_DIODE_BLOCK_ON,
-                     LEGACY_PUMPKIN_STEM, LEGACY_MELON_STEM, LEGACY_VINE, LEGACY_WATER_LILY, LEGACY_NETHER_WARTS,
-                     LEGACY_ENDER_PORTAL, LEGACY_COCOA, LEGACY_TRIPWIRE_HOOK, LEGACY_TRIPWIRE, LEGACY_FLOWER_POT,
-                     LEGACY_CARROT, LEGACY_POTATO, LEGACY_WOOD_BUTTON, LEGACY_SKULL, LEGACY_REDSTONE_COMPARATOR_OFF,
-                     LEGACY_REDSTONE_COMPARATOR_ON, LEGACY_ACTIVATOR_RAIL, LEGACY_CARPET, LEGACY_DOUBLE_PLANT,
-                     LEGACY_END_ROD, LEGACY_CHORUS_PLANT, LEGACY_CHORUS_FLOWER, LEGACY_BEETROOT_BLOCK,
-                     LEGACY_END_GATEWAY,
-                     LEGACY_STRUCTURE_VOID -> true;
-                default -> false;
-            };
+                         @Advice.This @NotNull Material material) {
+            // This is unreadable I agree but by doing this I can avoid creating a MaterialAdvices$1 class that wouldn't be found on the bukkit classloader
+            returned = material.isBlock() && (material == Material.ACACIA_BUTTON || material == Material.ACACIA_SAPLING || material == Material.ACTIVATOR_RAIL || material == Material.AIR || material == Material.ALLIUM || material == Material.ATTACHED_MELON_STEM || material == Material.ATTACHED_PUMPKIN_STEM || material == Material.AZURE_BLUET || material == Material.BARRIER || material == Material.BEETROOTS || material == Material.BIRCH_BUTTON || material == Material.BIRCH_SAPLING || material == Material.BLACK_CARPET || material == Material.BLUE_CARPET || material == Material.BLUE_ORCHID || material == Material.BROWN_CARPET || material == Material.BROWN_MUSHROOM || material == Material.CARROTS || material == Material.CAVE_AIR || material == Material.CHORUS_FLOWER || material == Material.CHORUS_PLANT || material == Material.COCOA || material == Material.COMPARATOR || material == Material.CREEPER_HEAD || material == Material.CREEPER_WALL_HEAD || material == Material.CYAN_CARPET || material == Material.DANDELION || material == Material.DARK_OAK_BUTTON || material == Material.DARK_OAK_SAPLING || material == Material.DEAD_BUSH || material == Material.DETECTOR_RAIL || material == Material.DRAGON_HEAD || material == Material.DRAGON_WALL_HEAD || material == Material.END_GATEWAY || material == Material.END_PORTAL || material == Material.END_ROD || material == Material.FERN || material == Material.FIRE || material == Material.FLOWER_POT || material == Material.GRAY_CARPET || material == Material.GREEN_CARPET || material == Material.JUNGLE_BUTTON || material == Material.JUNGLE_SAPLING || material == Material.LADDER || material == Material.LARGE_FERN || material == Material.LEVER || material == Material.LIGHT_BLUE_CARPET || material == Material.LIGHT_GRAY_CARPET || material == Material.LILAC || material == Material.LILY_PAD || material == Material.LIME_CARPET || material == Material.MAGENTA_CARPET || material == Material.MELON_STEM || material == Material.NETHER_PORTAL || material == Material.NETHER_WART || material == Material.OAK_BUTTON || material == Material.OAK_SAPLING || material == Material.ORANGE_CARPET || material == Material.ORANGE_TULIP || material == Material.OXEYE_DAISY || material == Material.PEONY || material == Material.PINK_CARPET || material == Material.PINK_TULIP || material == Material.PLAYER_HEAD || material == Material.PLAYER_WALL_HEAD || material == Material.POPPY || material == Material.POTATOES || material == Material.POTTED_ACACIA_SAPLING || material == Material.POTTED_ALLIUM || material == Material.POTTED_AZALEA_BUSH || material == Material.POTTED_AZURE_BLUET || material == Material.POTTED_BIRCH_SAPLING || material == Material.POTTED_BLUE_ORCHID || material == Material.POTTED_BROWN_MUSHROOM || material == Material.POTTED_CACTUS || material == Material.POTTED_DANDELION || material == Material.POTTED_DARK_OAK_SAPLING || material == Material.POTTED_DEAD_BUSH || material == Material.POTTED_FERN || material == Material.POTTED_FLOWERING_AZALEA_BUSH || material == Material.POTTED_JUNGLE_SAPLING || material == Material.POTTED_OAK_SAPLING || material == Material.POTTED_ORANGE_TULIP || material == Material.POTTED_OXEYE_DAISY || material == Material.POTTED_PINK_TULIP || material == Material.POTTED_POPPY || material == Material.POTTED_RED_MUSHROOM || material == Material.POTTED_RED_TULIP || material == Material.POTTED_SPRUCE_SAPLING || material == Material.POTTED_WHITE_TULIP || material == Material.POWERED_RAIL || material == Material.PUMPKIN_STEM || material == Material.PURPLE_CARPET || material == Material.RAIL || material == Material.REDSTONE_TORCH || material == Material.REDSTONE_WALL_TORCH || material == Material.REDSTONE_WIRE || material == Material.RED_CARPET || material == Material.RED_MUSHROOM || material == Material.RED_TULIP || material == Material.REPEATER || material == Material.ROSE_BUSH || material == Material.SHORT_GRASS || material == Material.SKELETON_SKULL || material == Material.SKELETON_WALL_SKULL || material == Material.SNOW || material == Material.SPRUCE_BUTTON || material == Material.SPRUCE_SAPLING || material == Material.STONE_BUTTON || material == Material.STRUCTURE_VOID || material == Material.SUGAR_CANE || material == Material.SUNFLOWER || material == Material.TALL_GRASS || material == Material.TORCH || material == Material.TRIPWIRE || material == Material.TRIPWIRE_HOOK || material == Material.VINE || material == Material.VOID_AIR || material == Material.WALL_TORCH || material == Material.WHEAT || material == Material.WHITE_CARPET || material == Material.WHITE_TULIP || material == Material.WITHER_SKELETON_SKULL || material == Material.WITHER_SKELETON_WALL_SKULL || material == Material.YELLOW_CARPET || material == Material.ZOMBIE_HEAD || material == Material.ZOMBIE_WALL_HEAD || material == Material.LEGACY_AIR || material == Material.LEGACY_SAPLING || material == Material.LEGACY_POWERED_RAIL || material == Material.LEGACY_DETECTOR_RAIL || material == Material.LEGACY_LONG_GRASS || material == Material.LEGACY_DEAD_BUSH || material == Material.LEGACY_YELLOW_FLOWER || material == Material.LEGACY_RED_ROSE || material == Material.LEGACY_BROWN_MUSHROOM || material == Material.LEGACY_RED_MUSHROOM || material == Material.LEGACY_TORCH || material == Material.LEGACY_FIRE || material == Material.LEGACY_REDSTONE_WIRE || material == Material.LEGACY_CROPS || material == Material.LEGACY_LADDER || material == Material.LEGACY_RAILS || material == Material.LEGACY_LEVER || material == Material.LEGACY_REDSTONE_TORCH_OFF || material == Material.LEGACY_REDSTONE_TORCH_ON || material == Material.LEGACY_STONE_BUTTON || material == Material.LEGACY_SNOW || material == Material.LEGACY_SUGAR_CANE_BLOCK || material == Material.LEGACY_PORTAL || material == Material.LEGACY_DIODE_BLOCK_OFF || material == Material.LEGACY_DIODE_BLOCK_ON || material == Material.LEGACY_PUMPKIN_STEM || material == Material.LEGACY_MELON_STEM || material == Material.LEGACY_VINE || material == Material.LEGACY_WATER_LILY || material == Material.LEGACY_NETHER_WARTS || material == Material.LEGACY_ENDER_PORTAL || material == Material.LEGACY_COCOA || material == Material.LEGACY_TRIPWIRE_HOOK || material == Material.LEGACY_TRIPWIRE || material == Material.LEGACY_FLOWER_POT || material == Material.LEGACY_CARROT || material == Material.LEGACY_POTATO || material == Material.LEGACY_WOOD_BUTTON || material == Material.LEGACY_SKULL || material == Material.LEGACY_REDSTONE_COMPARATOR_OFF || material == Material.LEGACY_REDSTONE_COMPARATOR_ON || material == Material.LEGACY_ACTIVATOR_RAIL || material == Material.LEGACY_CARPET || material == Material.LEGACY_DOUBLE_PLANT || material == Material.LEGACY_END_ROD || material == Material.LEGACY_CHORUS_PLANT || material == Material.LEGACY_CHORUS_FLOWER || material == Material.LEGACY_BEETROOT_BLOCK || material == Material.LEGACY_END_GATEWAY || material == Material.LEGACY_STRUCTURE_VOID);
         }
     }
 
     public static class isFlammable {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             returned = type != null && type.isFlammable();
         }
     }
 
     public static class isBurnable {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             returned = type != null && type.isBurnable();
         }
     }
 
     public static class isFuel {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             ItemType type = material.asItemType();
             returned = type != null && type.isFuel();
         }
     }
 
     public static class isOccluding {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             returned = type != null && type.isOccluding();
         }
     }
 
     public static class hasGravity {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             returned = type != null && type.hasGravity();
         }
     }
 
     public static class isItem {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             returned = material.asItemType() != null;
         }
     }
 
     @SuppressWarnings("deprecation")
     public static class isInteractable {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             returned = type != null && type.isInteractable();
         }
     }
 
     public static class getHardness {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) float returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             Preconditions.checkArgument(type != null, "The Material is not a block!");
             returned = type.getHardness();
@@ -407,9 +414,10 @@ public class MaterialAdvices {
     }
 
     public static class getBlastResistance {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) float returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             Preconditions.checkArgument(type != null, "The Material is not a block!");
             returned = type.getBlastResistance();
@@ -417,9 +425,10 @@ public class MaterialAdvices {
     }
 
     public static class getSlipperiness {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) float returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             BlockType type = material.asBlockType();
             Preconditions.checkArgument(type != null, "The Material is not a block!");
             returned = type.getSlipperiness();
@@ -428,9 +437,10 @@ public class MaterialAdvices {
 
     @SuppressWarnings("deprecation")
     public static class getCraftingRemainingItem {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) Material returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             ItemType type = material.asItemType();
             Preconditions.checkArgument(type != null, "The Material is not an item!");
             returned = type.getCraftingRemainingItem() == null ? null : type.getCraftingRemainingItem().asMaterial();
@@ -439,9 +449,10 @@ public class MaterialAdvices {
 
     @SuppressWarnings("UnstableApiUsage")
     public static class getEquipmentSlot {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) EquipmentSlot returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             ItemType type = material.asItemType();
             Preconditions.checkArgument(type != null, "The Material is not an item!");
             Equippable equippable = type.getDefaultData(DataComponentTypes.EQUIPPABLE);
@@ -451,42 +462,48 @@ public class MaterialAdvices {
 
     @SuppressWarnings("removal")
     public static class getCreativeCategory {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) CreativeCategory returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             ItemType type = material.asItemType();
             returned = type == null ? null : type.getCreativeCategory();
         }
     }
 
     public static class getBlockTranslationKey {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) String returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             returned = material.isBlock() ? material.translationKey() : null;
         }
     }
 
     public static class getItemTranslationKey {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) String returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             returned = material.isItem() ? material.translationKey() : null;
         }
     }
 
     public static class isCompostable {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material) {
-            returned = material.isItem() && material.asItemType().isCompostable();
+                         @Advice.This @NotNull Material material) {
+            ItemType itemType = material.asItemType();
+            returned = itemType != null && itemType.isCompostable();
         }
     }
 
     public static class getCompostChance {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) float returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             ItemType type = material.asItemType();
             Preconditions.checkArgument(type != null, "The Material is not an item!");
             returned = type.getCompostChance();
@@ -495,9 +512,10 @@ public class MaterialAdvices {
 
     @SuppressWarnings({"removal", "deprecation"})
     public static class asItemType {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) ItemType returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             if (material.isLegacy()) {
                 NamespacedKey key = Bukkit.getUnsafe().fromLegacy(new org.bukkit.material.MaterialData(material), true).getKey();
                 returned = Registry.ITEM.get(key);
@@ -509,9 +527,10 @@ public class MaterialAdvices {
 
     @SuppressWarnings({"removal", "deprecation"})
     public static class asBlockType {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) BlockType returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             if (material.isLegacy()) {
                 NamespacedKey key = Bukkit.getUnsafe().fromLegacy(new org.bukkit.material.MaterialData(material), true).getKey();
                 returned = Registry.BLOCK.get(key);
@@ -521,11 +540,23 @@ public class MaterialAdvices {
         }
     }
 
+    public static class getData {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment", "removal"})
+        @Advice.OnMethodExit
+        static void exit(@Advice.Return(readOnly = false) Class<? extends org.bukkit.material.MaterialData> returned,
+                         @Advice.FieldValue("ctor") @NotNull Constructor<? extends org.bukkit.material.MaterialData> ctor,
+                         @Advice.This @NotNull Material material) {
+            Preconditions.checkArgument(material.isLegacy(), "Cannot get data class of Modern Material");
+            returned = ctor.getDeclaringClass();
+        }
+    }
+
     @SuppressWarnings("UnstableApiUsage")
     public static class getDefaultData {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static <T> void exit(@Advice.Return(readOnly = false) T returned,
-                             @Advice.This Material material,
+                             @Advice.This @NotNull Material material,
                              @Advice.Argument(0) io.papermc.paper.datacomponent.DataComponentType.Valued<T> type) {
             Preconditions.checkArgument(material.asItemType() != null);
             returned = material.asItemType().getDefaultData(type);
@@ -534,9 +565,10 @@ public class MaterialAdvices {
 
     @SuppressWarnings("UnstableApiUsage")
     public static class hasDefaultData {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) boolean returned,
-                         @Advice.This Material material,
+                         @Advice.This @NotNull Material material,
                          @Advice.Argument(0) DataComponentType type) {
             Preconditions.checkArgument(material.asItemType() != null);
             returned = material.asItemType().hasDefaultData(type);
@@ -545,9 +577,10 @@ public class MaterialAdvices {
 
     @SuppressWarnings("UnstableApiUsage")
     public static class getDefaultDataTypes {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) Set<DataComponentType> returned,
-                         @Advice.This Material material) {
+                         @Advice.This @NotNull Material material) {
             Preconditions.checkArgument(material.asItemType() != null);
             returned = material.asItemType().getDefaultDataTypes();
         }
@@ -555,6 +588,7 @@ public class MaterialAdvices {
 
     @SuppressWarnings("removal")
     public static class getMaxStackSize {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
         @Advice.OnMethodExit
         static void exit(@Advice.Return(readOnly = false) int returned,
                          @Advice.FieldValue(value = "maxStack", readOnly = false) int maxStack,
@@ -569,6 +603,62 @@ public class MaterialAdvices {
                 return;
             }
             returned = maxStack;
+        }
+    }
+
+    /**
+     * Removed in 1.21.9
+     */
+    public static class isEnabledByFeature {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment", "removal", "UnstableApiUsage"})
+        @Advice.OnMethodExit
+        static void exit(@Advice.Return(readOnly = false) boolean returned,
+                         @Advice.This @NotNull Material material,
+                         @Advice.Argument(0) @NotNull World world) {
+            ItemType itemType = material.asItemType();
+            if (itemType != null)
+                returned = Bukkit.getDataPackManager().isEnabledByFeature(itemType, world);
+            else if (material.asBlockType() != null)
+                returned = Bukkit.getDataPackManager().isEnabledByFeature(material.asBlockType(), world);
+        }
+    }
+
+    /**
+     * Becomes {@link Material#isAir()} in 1.21.5
+     */
+    public static class isEmpty {
+        @Contract(pure = true)
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
+        @Advice.OnMethodExit
+        static void exit(@Advice.Return(readOnly = false) boolean returned,
+                         @Advice.This @NotNull Material material) {
+            returned = (material == Material.AIR || material == Material.CAVE_AIR || material == Material.VOID_AIR);
+        }
+    }
+
+    /**
+     * {@link getEquipmentSlot} in 1.21.5
+     */
+    public static class getEquipmentSlot_old {
+        @SuppressWarnings({"ParameterCanBeLocal", "UnusedAssignment"})
+        @Advice.OnMethodExit
+        static void exit(@Advice.Return(readOnly = false) EquipmentSlot returned,
+                         @Advice.This @NotNull Material material) {
+            Preconditions.checkArgument(material.isItem(), "The Material is not an item!");
+            if (material == Material.CARVED_PUMPKIN || material == Material.CHAINMAIL_HELMET || material == Material.CREEPER_HEAD || material == Material.DIAMOND_HELMET || material == Material.DRAGON_HEAD || material == Material.GOLDEN_HELMET || material == Material.IRON_HELMET || material == Material.LEATHER_HELMET || material == Material.NETHERITE_HELMET || material == Material.PLAYER_HEAD || material == Material.PIGLIN_HEAD || material == Material.SKELETON_SKULL || material == Material.TURTLE_HELMET || material == Material.WITHER_SKELETON_SKULL || material == Material.ZOMBIE_HEAD)
+                returned = EquipmentSlot.HEAD;
+            else if (material == Material.CHAINMAIL_CHESTPLATE || material == Material.DIAMOND_CHESTPLATE || material == Material.ELYTRA || material == Material.GOLDEN_CHESTPLATE || material == Material.IRON_CHESTPLATE || material == Material.LEATHER_CHESTPLATE || material == Material.NETHERITE_CHESTPLATE)
+                returned = EquipmentSlot.CHEST;
+            else if (material == Material.CHAINMAIL_LEGGINGS || material == Material.DIAMOND_LEGGINGS || material == Material.GOLDEN_LEGGINGS || material == Material.IRON_LEGGINGS || material == Material.LEATHER_LEGGINGS || material == Material.NETHERITE_LEGGINGS)
+                returned = EquipmentSlot.LEGS;
+            else if (material == Material.CHAINMAIL_BOOTS || material == Material.DIAMOND_BOOTS || material == Material.GOLDEN_BOOTS || material == Material.IRON_BOOTS || material == Material.LEATHER_BOOTS || material == Material.NETHERITE_BOOTS)
+                returned = EquipmentSlot.FEET;
+            else if (material == Material.SHIELD)
+                returned = EquipmentSlot.OFF_HAND;
+            else if (material == Material.BLACK_CARPET || material == Material.BLUE_CARPET || material == Material.BROWN_CARPET || material == Material.CYAN_CARPET || material == Material.DIAMOND_HORSE_ARMOR || material == Material.GOLDEN_HORSE_ARMOR || material == Material.GRAY_CARPET || material == Material.GREEN_CARPET || material == Material.IRON_HORSE_ARMOR || material == Material.LEATHER_HORSE_ARMOR || material == Material.LIGHT_BLUE_CARPET || material == Material.LIGHT_GRAY_CARPET || material == Material.LIME_CARPET || material == Material.MAGENTA_CARPET || material == Material.ORANGE_CARPET || material == Material.PINK_CARPET || material == Material.PURPLE_CARPET || material == Material.RED_CARPET || material == Material.WHITE_CARPET || material == Material.WOLF_ARMOR || material == Material.YELLOW_CARPET)
+                returned = EquipmentSlot.BODY;
+            else
+                returned = EquipmentSlot.HAND;
         }
     }
 

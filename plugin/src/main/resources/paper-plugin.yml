@@ -1,0 +1,8 @@
+name: plugin
+version: '1.0-SNAPSHOT'
+main: dev.misieur.justamaterialplugin.Plugin
+bootstrapper: dev.misieur.justamaterialplugin.Bootstrap
+api-version: '1.21'
+authors: [Misieur]
+description: A mod that will protect your privacy on third-party minecraft servers
+website: misieur.me
